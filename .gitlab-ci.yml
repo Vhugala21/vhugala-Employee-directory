@@ -1,0 +1,113 @@
+# GitLab CI Pipeline for Employee Directory
+# 
+# Pipeline stages:
+# 1. build  - Compile backend (fast feedback)
+# 2. test   - Run unit + integration tests with real PostgreSQL
+# 3. scan   - Security scanning (SonarQube SAST + Trivy SCA)
+#
+# Design decisions:
+# - Single Maven image for build/test (consistency, smaller cache)
+# - PostgreSQL service for integration tests (real DB, not H2)
+# - SonarQube waits for quality gate (blocking merge on failure)
+# - Trivy scans compiled artifacts in local .m2 cache (fast, offline-capable)
+# - Cache Maven + Sonar directories across runs (speeds up CI significantly)
+
+stages:
+  - build
+  - test
+  - scan
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  SONAR_USER_HOME: "$CI_PROJECT_DIR/.sonar"
+  GIT_DEPTH: "0"  # Needed for SonarQube SCM analysis
+
+cache:
+  paths:
+    - .m2/repository/
+    - .sonar/cache/
+
+default:
+  image: maven:3.9-eclipse-temurin-21
+
+build-backend:
+  stage: build
+  script:
+    - cd backend
+    - mvn -B clean compile
+
+test-backend:
+  stage: test
+  services:
+    - name: postgres:15-alpine
+      alias: postgres
+  variables:
+    POSTGRES_DB: employees
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: ci-only-password
+    DB_URL: jdbc:postgresql://postgres:5432/employees
+    DB_USER: postgres
+    DB_PASSWORD: ci-only-password
+  script:
+    - cd backend
+    - mvn -B test
+
+test-frontend:
+  stage: test
+  image: node:20-alpine
+  cache:
+    paths:
+      - frontend/node_modules/
+  before_script:
+    - cd frontend
+    - npm ci
+  script:
+    - npm test -- --watch=false --browsers=ChromeHeadless
+
+# SonarQube SAST scan - requires SONAR_HOST_URL and SONAR_TOKEN as masked CI/CD variables
+# The 'local-sonar' tag routes this to a runner with SonarQube network access
+sonarqube-check:
+  tags: [local-sonar]
+  stage: scan
+  variables:
+    SONAR_USER_HOME: "$CI_PROJECT_DIR/.sonar"
+  script:
+    - |
+      set -eu
+
+      if [ -z "${SONAR_HOST_URL:-}" ]; then
+        echo "ERROR: SONAR_HOST_URL is not configured"
+        exit 1
+      fi
+
+      if [ -z "${SONAR_TOKEN:-}" ]; then
+        echo "ERROR: SONAR_TOKEN is not configured"
+        exit 1
+      fi
+
+      cd backend
+
+      mvn -B verify \
+        org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+        -DskipTests \
+        -Dsonar.projectKey=employee-directory \
+        -Dsonar.host.url="$SONAR_HOST_URL" \
+        -Dsonar.token="$SONAR_TOKEN" \
+        -Dsonar.qualitygate.wait=true
+  allow_failure: false
+
+# Trivy SCA scan - checks for known vulnerabilities in dependencies
+# Runs in parallel with SonarQube (same stage)
+# Fails on CRITICAL severity only (adjustable per policy)
+trivy-dependency-scan:
+  stage: scan
+  image:
+    name: aquasec/trivy
+    entrypoint: [""]
+  cache:
+    paths: [.m2/repository]
+  before_script:
+    - mkdir -p ~/.m2
+    - cp -r .m2/repository ~/.m2/repository 2>/dev/null || true
+  script:
+    - trivy fs --exit-code 1 --severity CRITICAL backend/
