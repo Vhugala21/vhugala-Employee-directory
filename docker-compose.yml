@@ -15,15 +15,14 @@ services:
       timeout: 3s
       retries: 10
 
-  # Backend service - note: application.properties has hardcoded password for Phase 1
-  # Docker Compose overrides it via DB_PASSWORD env var here (Phase 2 correction)
-  # This demonstrates the "shift left" fix: same code, different config at deploy time
+  # Backend service - credentials are injected as environment variables that the
+  # placeholders in application.properties pick up (no hardcoded secrets in git)
   backend:
     build: ./backend
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
       db:
         condition: service_healthy

@@ -45,7 +45,4 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public List<Employee> searchEmployeesByName(String name) { return repo.findByNameContaining(name); }
-
-    @Override
-    public List<Employee> searchEmployeesByNameUnsafe(String name) { return repo.searchByName(name); }
 }

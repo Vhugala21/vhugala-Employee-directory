@@ -1,7 +1,16 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { EmployeesComponent } from './employees.component';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { DomSanitizer } from '@angular/platform-browser';
+import {
+  LucideAngularModule,
+  UsersRound,
+  UserRoundPlus,
+  Check,
+  Search,
+  Plus,
+  Trash2,
+  Building2,
+} from 'lucide-angular';
 
 describe('EmployeesComponent', () => {
   let component: EmployeesComponent;
@@ -10,7 +19,19 @@ describe('EmployeesComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EmployeesComponent, HttpClientTestingModule],
+      imports: [
+        EmployeesComponent,
+        HttpClientTestingModule,
+        LucideAngularModule.pick({
+          UsersRound,
+          UserRoundPlus,
+          Check,
+          Search,
+          Plus,
+          Trash2,
+          Building2,
+        }),
+      ],
     }).compileComponents();
   });
 
@@ -20,11 +41,14 @@ describe('EmployeesComponent', () => {
     }
   });
 
-  function setupComponent() {
+  function createComponent() {
     fixture = TestBed.createComponent(EmployeesComponent);
     component = fixture.componentInstance;
     httpMock = TestBed.inject(HttpTestingController);
-    
+  }
+
+  function setupComponent() {
+    createComponent();
     // Handle initial load() call in constructor
     httpMock.expectOne('/api/employees').flush([]);
     fixture.detectChanges();
@@ -36,21 +60,23 @@ describe('EmployeesComponent', () => {
   });
 
   it('should load employees on init', () => {
-    setupComponent();
+    createComponent();
     const mockEmployees = [
       { id: 1, name: 'John', department: 'IT', bio: 'Dev' },
       { id: 2, name: 'Jane', department: 'HR', bio: 'Manager' },
     ];
 
     httpMock.expectOne('/api/employees').flush(mockEmployees);
+    fixture.detectChanges();
 
     expect(component.rows()).toEqual(mockEmployees);
     expect(component.loading()).toBeFalse();
   });
 
   it('should handle load error', () => {
-    setupComponent();
+    createComponent();
     httpMock.expectOne('/api/employees').flush('Error', { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
 
     expect(component.errorMessage()).toContain('could not be loaded');
     expect(component.loading()).toBeFalse();
@@ -66,12 +92,18 @@ describe('EmployeesComponent', () => {
     expect(component.query()).toBe('Bob');
   });
 
-  it('should sanitize bio HTML to prevent XSS', () => {
+  it('should render bio as text so injected HTML is not executed', () => {
     setupComponent();
-    const maliciousBio = '<script>alert("xss")</script><b>Safe</b>';
-    const safeHtml = component.getBioHtml(maliciousBio);
-    
-    expect(safeHtml).toBeTruthy();
+    const maliciousEmployees = [
+      { id: 1, name: 'Mallory', department: 'IT', bio: '<script>alert("xss")</script><b>bold</b>' },
+    ];
+    component.rows.set(maliciousEmployees);
+    fixture.detectChanges();
+
+    const bioParagraph: HTMLElement = fixture.nativeElement.querySelector('.employee-bio');
+    expect(bioParagraph.textContent).toContain('<b>bold</b>');
+    expect(bioParagraph.querySelector('script')).toBeNull();
+    expect(bioParagraph.querySelector('b')).toBeNull();
   });
 
   it('should compute department count', () => {

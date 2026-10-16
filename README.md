@@ -6,16 +6,16 @@ A full-stack employee management application with a Java Spring Boot backend and
 
 **Backend:**
 - Java 21
-- Spring Boot 3.x
+- Spring Boot 4.x
 - Spring Data JPA
 - PostgreSQL
 - Maven
 
 **Frontend:**
-- Angular 18+
+- Angular 17+
 - TypeScript
 - RxJS
-- Angular Material / Bootstrap
+- lucide-angular icons + custom CSS
 
 **DevOps:**
 - Docker & Docker Compose
@@ -116,9 +116,14 @@ docker run -d \
 | `POSTGRES_DB` | Database name | `employees` |
 | `POSTGRES_USER` | Database user | `postgres` |
 | `POSTGRES_PASSWORD` | Database password | Required |
-| `SPRING_DATASOURCE_URL` | JDBC URL | Auto from above |
-| `SPRING_DATASOURCE_USERNAME` | DB username | Auto from above |
-| `SPRING_DATASOURCE_PASSWORD` | DB password | Auto from above |
+| `DB_URL` | JDBC URL used by the backend | `jdbc:postgresql://db:5432/${POSTGRES_DB}` |
+| `DB_USER` | DB username used by the backend | `${POSTGRES_USER}` |
+| `DB_PASSWORD` | DB password used by the backend | `${POSTGRES_PASSWORD}` |
+
+No database credentials are committed to git. The placeholders in
+`backend/src/main/resources/application.properties` read `DB_URL`, `DB_USER`,
+and `DB_PASSWORD` from the environment; Docker Compose and CI inject them at
+deploy time.
 
 ## API Endpoints
 
@@ -129,6 +134,7 @@ docker run -d \
 | POST | `/api/employees` | Create employee |
 | PUT | `/api/employees/{id}` | Update employee |
 | DELETE | `/api/employees/{id}` | Delete employee |
+| GET | `/api/employees/search?name=` | Search employees by name (parameterized query) |
 
 ## Testing
 
