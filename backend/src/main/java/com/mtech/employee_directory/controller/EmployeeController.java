@@ -35,7 +35,4 @@ public class EmployeeController {
 
     @GetMapping("/search")
     public List<Employee> searchEmployeesByName(@RequestParam String name) { return service.searchEmployeesByName(name); }
-
-    @GetMapping("/search-unsafe")
-    public List<Employee> searchEmployeesByNameUnsafe(@RequestParam String name) { return service.searchEmployeesByNameUnsafe(name); }
 }

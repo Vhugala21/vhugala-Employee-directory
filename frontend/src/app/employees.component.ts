@@ -1,6 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import {
   Building2,
   Check,
@@ -200,7 +199,7 @@ interface Employee {
                   </div>
                   <h3>{{ employee.name }}</h3>
                   <p class="employee-team"><lucide-angular name="building-2" [size]="14"></lucide-angular>{{ employee.department }}</p>
-                  <p class="employee-bio" [innerHTML]="getBioHtml(employee.bio || 'No biography added yet.')"></p>
+                  <p class="employee-bio">{{ employee.bio || 'No biography added yet.' }}</p>
                   <div class="employee-card-footer">
                     <span class="footer-dot"></span>
                     Team member
@@ -221,7 +220,6 @@ interface Employee {
 })
 export class EmployeesComponent {
   private http = inject(HttpClient);
-  private sanitizer = inject(DomSanitizer);
   private api = '/api/employees';
 
   rows = signal<Employee[]>([]);
@@ -234,26 +232,6 @@ export class EmployeesComponent {
 
   constructor() {
     this.load();
-  }
-
-  /**
-   * INTENTIONALLY VULNERABLE: XSS via bypassSecurityTrustHtml
-   * 
-   * This is a classic Angular anti-pattern. Using bypassSecurityTrustHtml tells
-   * Angular "trust me, this HTML is safe" - but we're passing raw user input!
-   * 
-   * An employee could enter: <script>alert('XSS')</script> or
-   * <img src=x onerror=stealCookies()>
-   * 
-   * SonarQube rule: typescript:S5131 (Angular bypassSecurityTrust* methods should not be used)
-   * 
-   * Fix options:
-   * 1. Use {{ employee.bio }} interpolation (Angular auto-escapes)
-   * 2. Use [innerHTML]="sanitizer.sanitize(SecurityContext.HTML, bio)" 
-   * 3. Use a safe pipe that only allows whitelisted tags
-   */
-  getBioHtml(bio: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(bio);
   }
 
   load() {

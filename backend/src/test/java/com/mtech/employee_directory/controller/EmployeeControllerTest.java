@@ -73,13 +73,4 @@ class EmployeeControllerTest {
         assertThat(controller.searchEmployeesByName("Ada")).isSameAs(employees);
         verify(service).searchEmployeesByName("Ada");
     }
-
-    @Test
-    void unsafeNamedSearchDelegatesToService() {
-        List<Employee> employees = List.of(new Employee());
-        when(service.searchEmployeesByNameUnsafe("Ada")).thenReturn(employees);
-
-        assertThat(controller.searchEmployeesByNameUnsafe("Ada")).isSameAs(employees);
-        verify(service).searchEmployeesByNameUnsafe("Ada");
-    }
 }

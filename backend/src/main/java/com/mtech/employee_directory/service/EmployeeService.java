@@ -11,5 +11,4 @@ public interface EmployeeService {
     Employee updateEmployeeDetails(Long id, Employee employeeDetails);
     void deleteEmployee(Long id);
     List<Employee> searchEmployeesByName(String name);
-    List<Employee> searchEmployeesByNameUnsafe(String name);
 }

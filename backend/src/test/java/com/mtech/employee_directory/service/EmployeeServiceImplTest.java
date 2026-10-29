@@ -98,15 +98,12 @@ class EmployeeServiceImplTest {
     }
 
     @Test
-    void searchMethodsDelegateToTheirRepositoryQueries() {
+    void searchEmployeesByNameDelegatesToRepositoryQuery() {
         List<Employee> employees = List.of(new Employee());
         when(repository.findByNameContaining("Ada")).thenReturn(employees);
-        when(repository.searchByName("Ada")).thenReturn(employees);
 
         assertThat(service.searchEmployeesByName("Ada")).isSameAs(employees);
-        assertThat(service.searchEmployeesByNameUnsafe("Ada")).isSameAs(employees);
         verify(repository).findByNameContaining("Ada");
-        verify(repository).searchByName("Ada");
     }
 
     private Employee employee(String name, String department, String bio) {

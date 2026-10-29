@@ -34,7 +34,8 @@ jobs:
           POSTGRES_DB: employees
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: ci-only-password
-        ports: 5432:5432
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U postgres -d employees"
           --health-interval 5s
@@ -87,10 +88,33 @@ jobs:
         with:
           context: ./backend
           push: false
+          load: true
           tags: employee-directory/backend:latest
       - name: Build frontend image
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: false
+          load: true
           tags: employee-directory/frontend:latest
+      # Trivy image scans: check built images (OS packages + app deps) for CVEs.
+      # Pinned to v0.36.0 (immutable release) - see April 2026 Trivy supply-chain attack.
+      # Fails the pipeline on CRITICAL CVEs only (matches policy in .gitlab-ci.yml).
+      - name: Scan backend image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: 'employee-directory/backend:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL'
+      - name: Scan frontend image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: 'employee-directory/frontend:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL'
