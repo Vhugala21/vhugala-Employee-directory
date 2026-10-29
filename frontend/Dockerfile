@@ -13,6 +13,8 @@ COPY . .
 RUN npx ng build --configuration production
 
 FROM nginx:alpine
+# Patch OS packages at build time (same remediation as backend image)
+RUN apk upgrade --no-cache
 COPY --from=build /app/dist/frontend/browser /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

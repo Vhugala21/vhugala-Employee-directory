@@ -78,7 +78,7 @@ jobs:
     name: Build Docker Images
     runs-on: ubuntu-latest
     needs: [build-backend, test-backend, test-frontend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Runs on PRs (scan images BEFORE merge) and on push to main (post-merge gate)
     steps:
       - uses: actions/checkout@v4
       - name: Set up Docker Buildx

@@ -13,7 +13,11 @@ RUN mvn -B -DskipTests package
 
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
-RUN addgroup -S app && adduser -S app -G app
+# Patch OS packages at build time so the image ships with fixed versions
+# (e.g. CVE-2026-111497 brotli-libs 1.2.0-r1 -> 1.2.1-r0) even if the
+# upstream base image was built before the fix landed in Alpine repos.
+RUN apk upgrade --no-cache \
+    && addgroup -S app && adduser -S app -G app
 COPY --from=build /app/target/*.jar app.jar
 USER app
 EXPOSE 8080
