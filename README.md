@@ -157,8 +157,20 @@ The GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push/PR:
 2. **Test Backend** - Unit + integration tests with PostgreSQL
 3. **Test Frontend** - Unit tests with Karma/Jasmine
 4. **Build Docker Images** - On main branch only
+5. **Trivy Image Scan** - Scans built images for CVEs (fails on CRITICAL)
 
 View runs: [Actions tab](https://github.com/Vhugala21/vhugala-Employee-directory/actions)
+
+The GitLab CI pipeline (`.gitlab-ci.yml`) adds a security scan stage:
+
+1. **SonarQube SAST** - Static analysis with blocking quality gate
+2. **Trivy Dependency Scan (SCA)** - Vulnerable open-source dependencies
+3. **Trivy Image Scan** - CVEs in built Docker images (docker-in-docker)
+
+All Trivy scans fail the pipeline on **CRITICAL** severity vulnerabilities.
+Trivy versions are pinned (`trivy-action@v0.36.0`, `aquasec/trivy:0.76.1`)
+because of the April 2026 Trivy supply-chain attack - never track `latest`
+for security tooling.
 
 ## Deployment
 
