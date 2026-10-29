@@ -34,7 +34,8 @@ jobs:
           POSTGRES_DB: employees
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: ci-only-password
-        ports: 5432:5432
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U postgres -d employees"
           --health-interval 5s
